@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temple of the Sun — RRP Calculator</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☀️</text></svg>">
+<style>
+  :root {
+    --bg: #f7f3ec;
+    --surface: #faf6ed;
+    --card: #ffffff;
+    --ink: #2a2418;
+    --ink-soft: #6b6355;
+    --ink-faint: #9a9284;
+    --line: #e5ddd0;
+    --accent: #8a6d3b;
+    --accent-dark: #6e5529;
+    --accent-soft: #e8ddc5;
+    --gold: #c9a961;
+    --warn: #a86b2d;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(42,36,24,0.06), 0 4px 12px rgba(42,36,24,0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    margin: 0;
+    padding: 24px 16px 60px;
+    line-height: 1.5;
+  }
+  .container { max-width: 780px; margin: 0 auto; }
+
+  /* Header */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .header-left h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .header-left .subtitle {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .meta-chip strong { color: var(--ink); font-weight: 600; }
+  .meta-chip.gold-price-row input {
+    width: 70px;
+    padding: 2px 4px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    text-align: right;
+  }
+  .meta-chip.stale { border-color: var(--warn); color: var(--warn); }
+  .refresh-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    margin-left: 4px;
+  }
+  .refresh-btn:hover { background: var(--accent-dark); }
+  .refresh-btn:disabled { background: #c5bfb1; cursor: not-allowed; }
+  #gold-meta { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
+
+  .export-row { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+  .export-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .export-btn:hover { background: var(--accent-dark); }
+  .export-btn svg { width: 14px; height: 14px; }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+  }
+  .subsection-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    margin: 18px 0 10px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .subsection-title:first-child { margin-top: 0; }
+
+  /* Quote type toggle */
+  .toggle-group {
+    display: flex;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 14px;
+  }
+  .toggle-group input { display: none; }
+  .toggle-group label {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    margin: 0;
+    border-radius: 5px;
+    color: var(--ink-soft);
+    transition: all 0.15s;
+  }
+  .toggle-group input:checked + label {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+  .customer-field {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease, margin 0.25s ease;
+    margin-bottom: 0;
+  }
+  .customer-field.visible {
+    max-height: 120px;
+    margin-bottom: 14px;
+  }
+
+  /* Grid for form fields */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; }
+  .field.full { grid-column: 1 / -1; }
+  .field.hidden { display: none; }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(138,109,59,0.1);
+  }
+  .hint { font-size: 11px; color: var(--ink-soft); margin-top: 3px; }
+
+  /* Product pills */
+  .product-pills {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  @media (max-width: 500px) { .product-pills { grid-template-columns: repeat(2, 1fr); } }
+  .product-pill {
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .product-pill:hover { border-color: var(--accent); }
+  .product-pill.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* Results */
+  .result-card {
+    background: linear-gradient(135deg, #fff 0%, #faf6ed 100%);
+    border: 1px solid var(--accent-soft);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .result-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .rrp-primary {
+    font-size: 44px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  .rrp-secondary {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+  .breakdown {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    text-align: left;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 32px;
+    font-size: 13px;
+  }
+  @media (max-width: 500px) { .breakdown { grid-template-columns: 1fr; } }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+  }
+  .breakdown-row.total {
+    font-weight: 600;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    margin-top: 4px;
+  }
+  .breakdown-label { color: var(--ink-soft); }
+  .breakdown-value { font-variant-numeric: tabular-nums; color: var(--ink); }
+
+  /* Reasoning list */
+  .reasoning-list {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+    margin: 0;
+  }
+  .reasoning-list li {
+    counter-increment: step;
+    padding: 12px 0 12px 40px;
+    position: relative;
+    font-size: 14px;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    line-height: 1.55;
+  }
+  .reasoning-list li:last-child { border-bottom: none; }
+  .reasoning-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .reasoning-list strong { color: var(--accent-dark); }
+  .reasoning-list .calc {
+    color: var(--ink-soft);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    display: block;
+    margin-top: 3px;
+  }
+
+  /* Save tip */
+  .tip {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #eef5e8;
+    border: 1px solid #d4e3c5;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #3d5a2a;
+  }
+  .tip kbd {
+    background: #fff;
+    border: 1px solid #c5d3b6;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-family: monospace;
+    font-size: 11px;
+  }
+
+  /* ===== PRINT STYLES — ONE PAGE A4 WITH BREATHING ROOM ===== */
+  @media print {
+    @page { size: A4; margin: 15mm 16mm 18mm; }
+    body {
+      background: #fff;
+      padding: 0;
+      margin: 0;
+      font-size: 10pt;
+      color: #1a1a1a;
+    }
+    .container { max-width: 100%; }
+
+    header, .export-row, .tip, .no-print,
+    .product-pills, .toggle-group, .customer-field,
+    .hint, .refresh-btn, #gold-meta, .meta { display: none !important; }
+
+    /* Print-only quote header — proper breathing room */
+    .print-header {
+      display: block !important;
+      border-bottom: 2px solid var(--accent-dark);
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .print-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .print-header h1 {
+      font-size: 18pt;
+      font-weight: 600;
+      margin: 0 0 2px;
+      color: #2a2418;
+      letter-spacing: 0.04em;
+    }
+    .print-header .tagline {
+      font-size: 8pt;
+      color: #6b6355;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .print-header .quote-meta {
+      text-align: right;
+      font-size: 9pt;
+      color: #4a4238;
+    }
+    .print-header .quote-meta .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .print-product-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-top: 10px;
+      gap: 16px;
+    }
+    .print-product-bar .product-name {
+      font-size: 13pt;
+      font-weight: 600;
+      color: #2a2418;
+    }
+    .print-product-bar .product-type-label {
+      font-size: 9pt;
+      color: #6b6355;
+      margin-top: 2px;
+    }
+    .print-product-bar .product-type-label strong { color: #2a2418; }
+    .print-product-bar .customer-for {
+      font-size: 9pt;
+      color: #6b6355;
+    }
+    .print-product-bar .customer-for strong { color: #2a2418; }
+
+    /* Cards with breathing room */
+    .card {
+      border: 1px solid #d5cdbc;
+      border-radius: 4px;
+      padding: 14px 18px !important;
+      box-shadow: none;
+      margin-bottom: 14px !important;
+      page-break-inside: avoid;
+    }
+    .section-title {
+      font-size: 8pt;
+      margin-bottom: 10px !important;
+      color: var(--accent-dark);
+    }
+    .subsection-title {
+      font-size: 9pt;
+      margin: 12px 0 8px !important;
+      padding-bottom: 3px;
+    }
+    .subsection-title:first-child { margin-top: 0 !important; }
+
+    .grid { gap: 8px 16px !important; }
+    .field { margin-bottom: 4px; }
+    .field.hidden { display: none !important; }
+    .field label {
+      font-size: 8pt;
+      color: #6b6355;
+      font-weight: 500;
+      margin-bottom: 1px;
+    }
+
+    input[type="text"], input[type="number"], select {
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      font-size: 10pt !important;
+      font-weight: 500;
+      color: #2a2418 !important;
+      -webkit-appearance: none;
+      appearance: none;
+      width: auto !important;
+    }
+    select { -moz-appearance: none; background-image: none !important; }
+
+    /* Hide reasoning section entirely on print */
+    .reasoning-card { display: none !important; }
+
+    /* Results block — the hero */
+    .result-card {
+      margin-top: 6px;
+      padding: 14px 20px !important;
+      border: 1.5px solid var(--accent);
+      background: #faf6ed;
+      page-break-inside: avoid;
+      margin-bottom: 10px !important;
+    }
+    .result-title { font-size: 8pt; margin-bottom: 4px; }
+    .rrp-primary { font-size: 28pt; line-height: 1.1; }
+    .rrp-secondary { font-size: 9pt; }
+    .breakdown {
+      margin-top: 12px;
+      padding-top: 10px;
+      font-size: 9pt;
+      gap: 3px 24px;
+    }
+    .breakdown-row { padding: 2px 0; }
+
+    /* Footer */
+    .print-footer {
+      display: flex !important;
+      position: fixed;
+      bottom: 8mm;
+      left: 16mm;
+      right: 16mm;
+      border-top: 1px solid #d5cdbc;
+      padding-top: 6px;
+      font-size: 7.5pt;
+      color: #6b6355;
+      justify-content: space-between;
+    }
+  }
+
+  .print-header, .print-footer { display: none; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Screen header -->
+  <header class="no-print">
+    <div class="header-left">
+      <h1>Temple of the Sun — RRP Calculator</h1>
+      <p class="subtitle">Planning & Control · Quick pricing tool</p>
+      <div class="meta">
+        <div class="meta-chip">
+          <span>Today:</span>
+          <strong id="today-date">—</strong>
+        </div>
+        <div class="meta-chip gold-price-row" id="gold-chip">
+          <span>Gold spot (24k):</span>
+          <span>A$</span>
+          <input type="number" id="gold-price" step="0.01" min="0">
+          <span>/g</span>
+          <button class="refresh-btn" id="refresh-gold" title="Fetch the latest spot price">Refresh</button>
+        </div>
+      </div>
+      <div id="gold-meta">Fetching live rate…</div>
+    </div>
+  </header>
+
+  <!-- Print-only quote header -->
+  <div class="print-header">
+    <div class="print-header-top">
+      <div>
+        <h1>Temple of the Sun</h1>
+        <p class="tagline">RRP Quote</p>
+      </div>
+      <div class="quote-meta">
+        <div class="badge" id="printQuoteTypeBadge">Internal</div>
+        <div><strong id="printDate"></strong></div>
+        <div id="printGoldRef"></div>
+      </div>
+    </div>
+    <div class="print-product-bar">
+      <div>
+        <div class="product-name" id="printProductName">—</div>
+        <div class="product-type-label" id="printProductType"></div>
+      </div>
+      <div class="customer-for" id="printCustomerFor"></div>
+    </div>
+  </div>
+
+  <!-- Export button -->
+  <div class="export-row no-print">
+    <button class="export-btn" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export PDF
+    </button>
+  </div>
+
+  <!-- Product Details Card — vertical layout with subsections -->
+  <div class="card">
+    <div class="section-title">Product Details</div>
+
+    <!-- Quote type -->
+    <div class="toggle-group">
+      <input type="radio" name="quoteType" id="qtInternal" value="internal" checked>
+      <label for="qtInternal">Internal</label>
+      <input type="radio" name="quoteType" id="qtCustomer" value="customer">
+      <label for="qtCustomer">Customer Quote</label>
+    </div>
+    <div class="customer-field" id="customerField">
+      <label for="customerName">Customer Name</label>
+      <input type="text" id="customerName" placeholder="e.g. Jane Smith">
+    </div>
+
+    <!-- Product name -->
+    <div class="grid">
+      <div class="field full">
+        <label for="productName">Product Name / SKU</label>
+        <input type="text" id="productName" placeholder="e.g. Solstice Pendant — SKU-0472">
+      </div>
+    </div>
+
+    <!-- Product Type -->
+    <div class="subsection-title">Product Type</div>
+    <div class="product-pills">
+      <button type="button" class="product-pill active" data-product="ring">Ring</button>
+      <button type="button" class="product-pill" data-product="earrings">Earrings</button>
+      <button type="button" class="product-pill" data-product="necklace">Necklace</button>
+      <button type="button" class="product-pill" data-product="bracelet">Bracelet</button>
+    </div>
+
+    <!-- Metal -->
+    <div class="subsection-title">Metal</div>
+    <div class="grid">
+      <div class="field">
+        <label for="castingAlloy">Casting Alloy</label>
+        <select id="castingAlloy">
+          <option value="0.925">Sterling Silver (925) · 92.5%</option>
+          <option value="0.375">9k Gold · 37.5%</option>
+          <option value="0.585">14k Gold · 58.5%</option>
+          <option value="0.750" selected>18k Gold · 75.0%</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="castingWeight">Casting Weight (g)</label>
+        <input type="number" id="castingWeight" step="0.01" min="0" placeholder="e.g. 4.25">
+      </div>
+      <div class="field hidden" id="field-finding">
+        <label for="findingWeight">Total Finding Weight (g)</label>
+        <input type="number" id="findingWeight" step="0.01" min="0" value="0" placeholder="0.00">
+        <div class="hint">Posts, hooks, clasps, jump rings. For pairs, include both.</div>
+      </div>
+      <div class="field hidden" id="field-chain">
+        <label for="chainWeight">Total Chain Weight (g)</label>
+        <input type="number" id="chainWeight" step="0.01" min="0" value="0" placeholder="0.00">
+      </div>
+    </div>
+
+    <!-- Other Costs -->
+    <div class="subsection-title">Other Costs</div>
+    <div class="grid">
+      <div class="field">
+        <label for="stoneCost">Total Stone Cost (AUD)</label>
+        <input type="number" id="stoneCost" step="0.01" min="0" value="0" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label for="labourCost">Total Labour Cost (AUD)</label>
+        <input type="number" id="labourCost" step="0.01" min="0" value="0" placeholder="0.00">
+      </div>
+      <div class="field full">
+        <label>Markup</label>
+        <input type="text" id="markupDisplay" value="—" readonly style="background:#f7f3ec; font-weight:600; color:var(--accent-dark);">
+        <div class="hint">Auto-selected from the Markup Logic Table based on total cost.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="result-card">
+    <div class="result-title">Suggested RRP</div>
+    <div class="rrp-primary" id="rrpValue">A$0</div>
+    <div class="rrp-secondary" id="rrpExact">—</div>
+
+    <div class="breakdown">
+      <div class="breakdown-row"><span class="breakdown-label">Metal Cost</span><span class="breakdown-value" id="outMetal">A$0.00</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">Stone Cost</span><span class="breakdown-value" id="outStone">A$0.00</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">Labour Cost</span><span class="breakdown-value" id="outLabour">A$0.00</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">Markup Applied</span><span class="breakdown-value" id="outMarkup">—</span></div>
+      <div class="breakdown-row total"><span class="breakdown-label">Total Cost</span><span class="breakdown-value" id="outTotal">A$0.00</span></div>
+      <div class="breakdown-row total"><span class="breakdown-label">Raw RRP (before ceiling)</span><span class="breakdown-value" id="outRRPraw">A$0.00</span></div>
+    </div>
+  </div>
+
+  <!-- Reasoning Card — separate card running vertically -->
+  <div class="card reasoning-card no-print">
+    <div class="section-title">Reasoning</div>
+    <ol class="reasoning-list" id="reasoning">
+      <li>Enter your inputs above to see the calculation logic.</li>
+    </ol>
+  </div>
+
+  <!-- Save tip -->
+  <div class="tip no-print">
+    💡 <strong>Save this page:</strong> Press <kbd>Ctrl</kbd>+<kbd>D</kbd> (Windows) or <kbd>⌘</kbd>+<kbd>D</kbd> (Mac) to bookmark. Use <strong>Export PDF</strong> for customer quotes.
+  </div>
+
+  <!-- Print-only footer -->
+  <div class="print-footer">
+    <span>Temple of the Sun · Planning & Control</span>
+    <span id="printFooterRef"></span>
+  </div>
+
+</div>
+
+<script>
+// ===== Config =====
+const PRODUCT_FIELDS = {
+  ring:     { finding: false, chain: false, label: 'Ring' },
+  earrings: { finding: true,  chain: false, label: 'Earrings' },
+  necklace: { finding: true,  chain: true,  label: 'Necklace' },
+  bracelet: { finding: true,  chain: true,  label: 'Bracelet' }
+};
+let currentProduct = 'ring';
+
+const MARKUP_TABLE = [
+  { bracket: 250,  factor: 5.50 }, { bracket: 500,  factor: 5.35 },
+  { bracket: 750,  factor: 5.30 }, { bracket: 1000, factor: 5.25 },
+  { bracket: 1250, factor: 4.90 }, { bracket: 1500, factor: 4.90 },
+  { bracket: 1750, factor: 4.80 }, { bracket: 2000, factor: 4.70 },
+  { bracket: 2500, factor: 4.70 }, { bracket: 3000, factor: 4.50 },
+  { bracket: 3500, factor: 4.30 }, { bracket: 4000, factor: 4.10 },
+  { bracket: 4500, factor: 3.90 }, { bracket: 5000, factor: 3.80 },
+  { bracket: 5500, factor: 3.70 }, { bracket: 6000, factor: 3.70 },
+  { bracket: 6500, factor: 3.60 }, { bracket: 7000, factor: 3.50 },
+  { bracket: 7500, factor: 3.50 }, { bracket: 8000, factor: 3.40 }
+];
+const FLOOR_FACTOR = 3.40;
+const CEILING_STEP = 250; // Matches =CEILING(rrp, 250)
+
+function lookupMarkup(totalCost) {
+  if (totalCost <= 0) return { factor: 0, bracket: null };
+  for (const row of MARKUP_TABLE) {
+    if (totalCost <= row.bracket) return { factor: row.factor, bracket: row.bracket };
+  }
+  return { factor: FLOOR_FACTOR, bracket: null };
+}
+
+// ===== Date =====
+const formatDate = d => d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const formatDateShort = d => d.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+const now = new Date();
+document.getElementById('today-date').textContent = formatDate(now);
+document.getElementById('printDate').textContent = formatDateShort(now);
+document.getElementById('printFooterRef').textContent = 'Generated ' + formatDateShort(now);
+
+// ===== Gold price fetch — with cascading fallbacks & localStorage cache =====
+const goldInput = document.getElementById('gold-price');
+const goldMeta = document.getElementById('gold-meta');
+const goldChip = document.getElementById('gold-chip');
+const refreshBtn = document.getElementById('refresh-gold');
+
+const CACHE_KEY = 'tots_gold_cache_v1';
+const FALLBACK_GOLD_PER_GRAM_AUD = 165.00;
+
+// Try to load last-known-good value from localStorage on init
+function loadCachedPrice() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+    if (cached && cached.price && cached.timestamp) return cached;
+  } catch (e) {}
+  return null;
+}
+
+function saveCachedPrice(price, source) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      price, source, timestamp: new Date().toISOString()
+    }));
+  } catch (e) {}
+}
+
+// Fetch AUD/USD FX rate — tries multiple sources until one works
+async function fetchAudPerUsd() {
+  const fxSources = [
+    { name: 'frankfurter.dev', url: 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=AUD', parse: d => d.rates.AUD },
+    { name: 'exchangerate.host', url: 'https://api.exchangerate.host/latest?base=USD&symbols=AUD', parse: d => d.rates.AUD },
+    { name: 'open.er-api.com', url: 'https://open.er-api.com/v6/latest/USD', parse: d => d.rates.AUD }
+  ];
+  const errs = [];
+  for (const s of fxSources) {
+    try {
+      const r = await fetch(s.url, { cache: 'no-store' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d = await r.json();
+      const rate = s.parse(d);
+      if (!rate || rate < 0.5 || rate > 5) throw new Error('invalid rate');
+      return { rate, source: s.name };
+    } catch (e) { errs.push(`${s.name}: ${e.message}`); }
+  }
+  throw new Error('FX sources all failed (' + errs.join(' | ') + ')');
+}
+
+// Source 1: gold-api.com (USD/oz) + best-available FX
+async function tryGoldApi() {
+  const goldRes = await fetch('https://api.gold-api.com/price/XAU', { cache: 'no-store' });
+  if (!goldRes.ok) throw new Error('gold-api ' + goldRes.status);
+  const goldData = await goldRes.json();
+  const usdPerOz = goldData.price;
+  if (!usdPerOz || usdPerOz < 100) throw new Error('Invalid gold price from gold-api');
+
+  const fx = await fetchAudPerUsd();
+  const audPerGram = (usdPerOz * fx.rate) / 31.1035;
+  return { price: audPerGram, source: `gold-api.com + ${fx.source} (US$${usdPerOz.toFixed(2)}/oz × A$${fx.rate.toFixed(4)}/US$)` };
+}
+
+// Source 2: freegoldapi.com — backup gold source
+async function tryFreeGoldApi() {
+  const res = await fetch('https://freegoldapi.com/data/latest.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error('freegoldapi ' + res.status);
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) throw new Error('Invalid freegoldapi response');
+  const latest = data[data.length - 1];
+  const usdPerOz = latest.price;
+  if (!usdPerOz || usdPerOz < 100) throw new Error('Invalid price from freegoldapi');
+
+  const fx = await fetchAudPerUsd();
+  const audPerGram = (usdPerOz * fx.rate) / 31.1035;
+  return { price: audPerGram, source: `freegoldapi.com + ${fx.source} (${latest.date}, US$${usdPerOz.toFixed(2)}/oz)` };
+}
+
+async function fetchGoldPrice() {
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = 'Fetching…';
+  goldMeta.textContent = 'Fetching live rate…';
+
+  const sources = [
+    { fn: tryGoldApi,      name: 'gold-api.com' },
+    { fn: tryFreeGoldApi,  name: 'freegoldapi.com' }
+  ];
+
+  const errors = [];
+  for (const source of sources) {
+    try {
+      const result = await source.fn();
+      // Success!
+      goldInput.value = result.price.toFixed(2);
+      saveCachedPrice(result.price, source.name);
+      const timeStr = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+      goldMeta.innerHTML = `✓ Live 24k spot · fetched ${timeStr} · source: ${result.source}.`;
+      goldChip.classList.remove('stale');
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'Refresh';
+      calculate();
+      return;
+    } catch (err) {
+      errors.push(`${source.name}: ${err.message}`);
+    }
+  }
+
+  // All sources failed — fall back to cache, then hardcoded default
+  const cached = loadCachedPrice();
+  if (cached) {
+    goldInput.value = cached.price.toFixed(2);
+    const cacheDate = new Date(cached.timestamp);
+    const ageMs = Date.now() - cacheDate.getTime();
+    const ageHrs = Math.round(ageMs / (1000 * 60 * 60));
+    const ageStr = ageHrs < 24 ? `${ageHrs} hr` : `${Math.round(ageHrs/24)} day`;
+    goldMeta.innerHTML = `<span style="color:var(--warn);">⚠ Live feed blocked — using cached rate from ${ageStr} ago (${cached.source}). Try Refresh again later.</span>`;
+    goldChip.classList.add('stale');
+  } else {
+    if (!goldInput.value || parseFloat(goldInput.value) <= 0) {
+      goldInput.value = FALLBACK_GOLD_PER_GRAM_AUD.toFixed(2);
+    }
+    goldMeta.innerHTML = `<span style="color:var(--warn);">⚠ Live feed unavailable.</span> Enter manually or try Refresh again. Full details: ${errors.join('; ')}`;
+    goldChip.classList.add('stale');
+  }
+  refreshBtn.disabled = false;
+  refreshBtn.textContent = 'Refresh';
+  calculate();
+}
+
+refreshBtn.addEventListener('click', fetchGoldPrice);
+goldInput.addEventListener('input', calculate);
+
+// ===== Product type selector =====
+document.querySelectorAll('.product-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.product-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentProduct = btn.dataset.product;
+    updateProductFields();
+    calculate();
+  });
+});
+
+function updateProductFields() {
+  const cfg = PRODUCT_FIELDS[currentProduct];
+  document.getElementById('field-finding').classList.toggle('hidden', !cfg.finding);
+  document.getElementById('field-chain').classList.toggle('hidden', !cfg.chain);
+  if (!cfg.finding) document.getElementById('findingWeight').value = 0;
+  if (!cfg.chain) document.getElementById('chainWeight').value = 0;
+}
+
+// ===== Quote type toggle =====
+const qtInternal = document.getElementById('qtInternal');
+const qtCustomer = document.getElementById('qtCustomer');
+const customerField = document.getElementById('customerField');
+const customerName = document.getElementById('customerName');
+
+function updateQuoteType() {
+  const isCustomer = qtCustomer.checked;
+  customerField.classList.toggle('visible', isCustomer);
+  const badge = document.getElementById('printQuoteTypeBadge');
+  const customerFor = document.getElementById('printCustomerFor');
+  if (isCustomer) {
+    badge.textContent = 'Customer Quote';
+    const name = customerName.value.trim();
+    customerFor.innerHTML = name ? `Prepared for <strong>${escapeHtml(name)}</strong>` : 'Prepared for <strong>[Customer Name]</strong>';
+  } else {
+    badge.textContent = 'Internal';
+    customerFor.innerHTML = '';
+  }
+}
+qtInternal.addEventListener('change', updateQuoteType);
+qtCustomer.addEventListener('change', updateQuoteType);
+customerName.addEventListener('input', updateQuoteType);
+
+const escapeHtml = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ===== Calculation =====
+const money = n => 'A$' + n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const moneyWhole = n => 'A$' + Math.round(n).toLocaleString('en-AU');
+
+function alloyLabel(purity) {
+  return {
+    '0.925': 'Sterling Silver (925)',
+    '0.375': '9k Gold',
+    '0.585': '14k Gold',
+    '0.750': '18k Gold'
+  }[purity] || 'Alloy';
+}
+
+function calculate() {
+  const cfg = PRODUCT_FIELDS[currentProduct];
+
+  const castingWt = parseFloat(document.getElementById('castingWeight').value) || 0;
+  const findingWt = cfg.finding ? (parseFloat(document.getElementById('findingWeight').value) || 0) : 0;
+  const chainWt   = cfg.chain   ? (parseFloat(document.getElementById('chainWeight').value)   || 0) : 0;
+  const totalWeight = castingWt + findingWt + chainWt;
+
+  const purityStr = document.getElementById('castingAlloy').value;
+  const purity = parseFloat(purityStr);
+  const stone = parseFloat(document.getElementById('stoneCost').value) || 0;
+  const labour = parseFloat(document.getElementById('labourCost').value) || 0;
+  const goldPrice = parseFloat(goldInput.value) || 0;
+
+  // Metal cost = total weight × gold spot × purity
+  const metalCost = totalWeight * goldPrice * purity;
+  const total = metalCost + stone + labour;
+  const { factor, bracket } = lookupMarkup(total);
+  const rrpRaw = total * factor;
+  // Ceiling up to nearest $250 (matches =CEILING(rrp, 250) in pricing sheet)
+  const rrpCeiling = rrpRaw > 0 ? Math.ceil(rrpRaw / CEILING_STEP) * CEILING_STEP : 0;
+
+  // Markup display
+  document.getElementById('markupDisplay').value = total > 0
+    ? `${factor.toFixed(2)}×  (Total ≤ A$${bracket ? bracket.toLocaleString() : '8,000+'})`
+    : '—';
+
+  // Breakdown
+  document.getElementById('outMetal').textContent = money(metalCost);
+  document.getElementById('outStone').textContent = money(stone);
+  document.getElementById('outLabour').textContent = money(labour);
+  document.getElementById('outMarkup').textContent = total > 0 ? `${factor.toFixed(2)}×` : '—';
+  document.getElementById('outTotal').textContent = money(total);
+  document.getElementById('outRRPraw').textContent = money(rrpRaw);
+
+  // Headline — the ceiling RRP
+  document.getElementById('rrpValue').textContent = total > 0 ? moneyWhole(rrpCeiling) : 'A$0';
+  document.getElementById('rrpExact').textContent = total > 0
+    ? `raw: ${money(rrpRaw)} · ceiling up to nearest A$${CEILING_STEP}`
+    : '—';
+
+  // Print header info
+  const productName = document.getElementById('productName').value.trim();
+  document.getElementById('printProductName').textContent = productName || '[Product Name]';
+  document.getElementById('printProductType').innerHTML = `<strong>${cfg.label}</strong> · ${alloyLabel(purityStr)} · ${totalWeight.toFixed(2)}g total metal`;
+  if (goldPrice > 0) {
+    document.getElementById('printGoldRef').textContent = `Gold ref: A$${goldPrice.toFixed(2)}/g (24k spot)`;
+  }
+
+  // Reasoning
+  updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, purity, purityStr, goldPrice, metalCost, stone, labour, total, factor, bracket, rrpRaw, rrpCeiling });
+}
+
+function updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, purity, purityStr, goldPrice, metalCost, stone, labour, total, factor, bracket, rrpRaw, rrpCeiling }) {
+  const list = document.getElementById('reasoning');
+  if (total <= 0) {
+    list.innerHTML = '<li>Enter your weights and costs above to see the calculation logic.</li>';
+    return;
+  }
+
+  let weightBreakdown = `${castingWt}g casting`;
+  if (cfg.finding) weightBreakdown += ` + ${findingWt}g finding`;
+  if (cfg.chain)   weightBreakdown += ` + ${chainWt}g chain`;
+
+  const bracketText = bracket
+    ? `Total cost of ${money(total)} falls in the <strong>≤ A$${bracket.toLocaleString()}</strong> band`
+    : `Total cost of ${money(total)} is above the top band, so the floor factor applies`;
+
+  const steps = [
+    {
+      text: `<strong>${cfg.label}</strong> in ${alloyLabel(purityStr)} — adding all metal weights.`,
+      calc: `${weightBreakdown} = <strong>${totalWeight.toFixed(2)}g total</strong>`
+    },
+    {
+      text: `<strong>Metal cost</strong> calculated from today's gold spot.`,
+      calc: `${totalWeight.toFixed(2)}g × A$${goldPrice.toFixed(2)}/g × ${(purity*100).toFixed(1)}% purity = <strong>${money(metalCost)}</strong>`
+    },
+    {
+      text: `<strong>Add all costs together</strong>.`,
+      calc: `${money(metalCost)} metal + ${money(stone)} stones + ${money(labour)} labour = <strong>${money(total)}</strong>`
+    },
+    {
+      text: `<strong>Markup applied from Markup Logic Table.</strong> ${bracketText}.`,
+      calc: `${money(total)} × <strong>${factor.toFixed(2)}×</strong> = <strong>${money(rrpRaw)}</strong> raw RRP`
+    },
+    {
+      text: `<strong>Round up to nearest A$${CEILING_STEP}</strong> — matches <code>=CEILING(rrp, 250)</code> in the pricing sheet.`,
+      calc: `${money(rrpRaw)} → <strong>${moneyWhole(rrpCeiling)}</strong> final RRP`
+    }
+  ];
+
+  list.innerHTML = steps.map(s => `<li>${s.text}<span class="calc">${s.calc}</span></li>`).join('');
+}
+
+// ===== Event wiring =====
+['productName', 'castingWeight', 'castingAlloy', 'findingWeight', 'chainWeight', 'stoneCost', 'labourCost']
+  .forEach(id => document.getElementById(id).addEventListener('input', calculate));
+
+// ===== Init =====
+updateQuoteType();
+updateProductFields();
+// Pre-fill with cached value if available, otherwise fallback — so we never show $0
+const cachedInit = loadCachedPrice();
+if (cachedInit) {
+  goldInput.value = cachedInit.price.toFixed(2);
+} else {
+  goldInput.value = FALLBACK_GOLD_PER_GRAM_AUD.toFixed(2);
+}
+calculate();
+fetchGoldPrice();
+</script>
+
+</body>
+</html>
