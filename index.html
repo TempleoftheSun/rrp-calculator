@@ -243,6 +243,20 @@
     border-color: var(--accent);
   }
 
+  /* White gold notice */
+  .wg-notice {
+    display: none;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #f0f4ff;
+    border: 1px solid #c5d0f0;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #3a4a7a;
+    line-height: 1.5;
+  }
+  .wg-notice.visible { display: block; }
+
   /* Results */
   .result-card {
     background: linear-gradient(135deg, #fff 0%, #faf6ed 100%);
@@ -374,7 +388,6 @@
     .product-pills, .toggle-group, .customer-field,
     .hint, .refresh-btn, #gold-meta, .meta { display: none !important; }
 
-    /* Print-only quote header — proper breathing room */
     .print-header {
       display: block !important;
       border-bottom: 2px solid var(--accent-dark);
@@ -441,7 +454,6 @@
     }
     .print-product-bar .customer-for strong { color: #2a2418; }
 
-    /* Cards with breathing room */
     .card {
       border: 1px solid #d5cdbc;
       border-radius: 4px;
@@ -485,10 +497,9 @@
     }
     select { -moz-appearance: none; background-image: none !important; }
 
-    /* Hide reasoning section entirely on print */
     .reasoning-card { display: none !important; }
+    .wg-notice { display: none !important; }
 
-    /* Results block — the hero */
     .result-card {
       margin-top: 6px;
       padding: 14px 20px !important;
@@ -508,7 +519,6 @@
     }
     .breakdown-row { padding: 2px 0; }
 
-    /* Footer */
     .print-footer {
       display: flex !important;
       position: fixed;
@@ -582,7 +592,7 @@
     </button>
   </div>
 
-  <!-- Product Details Card — vertical layout with subsections -->
+  <!-- Product Details Card -->
   <div class="card">
     <div class="section-title">Product Details</div>
 
@@ -620,12 +630,24 @@
     <div class="grid">
       <div class="field">
         <label for="castingAlloy">Casting Alloy</label>
-        <select id="castingAlloy">
-          <option value="0.925">Sterling Silver (925) · 92.5%</option>
-          <option value="0.375">9k Gold · 37.5%</option>
-          <option value="0.585">14k Gold · 58.5%</option>
-          <option value="0.750" selected>18k Gold · 75.0%</option>
+        <select id="castingAlloy" onchange="handleAlloyChange()">
+          <optgroup label="Yellow Gold">
+            <option value="0.375_9ky">9k Yellow Gold · 37.5%</option>
+            <option value="0.585_14ky">14k Yellow Gold · 58.5%</option>
+            <option value="0.750_18ky" selected>18k Yellow Gold · 75.0%</option>
+          </optgroup>
+          <optgroup label="White Gold">
+            <option value="0.375_9kw">9k White Gold · 37.5%</option>
+            <option value="0.585_14kw">14k White Gold · 58.5%</option>
+            <option value="0.750_18kw">18k White Gold · 75.0%</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="0.925_ss">Sterling Silver (925) · 92.5%</option>
+          </optgroup>
         </select>
+        <div class="wg-notice" id="wg-notice">
+          White gold uses the same purity as yellow gold of the same karat. Add rhodium plating cost under Additional Costs below.
+        </div>
       </div>
       <div class="field">
         <label for="castingWeight">Casting Weight (g)</label>
@@ -653,6 +675,15 @@
         <label for="labourCost">Total Labour Cost (AUD)</label>
         <input type="number" id="labourCost" step="0.01" min="0" value="0" placeholder="0.00">
       </div>
+      <div class="field">
+        <label for="cadCost">CAD Cost (AUD)</label>
+        <input type="number" id="cadCost" step="0.01" min="0" value="0" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label for="additionalCost">Additional Costs (AUD)</label>
+        <input type="number" id="additionalCost" step="0.01" min="0" value="0" placeholder="0.00">
+        <div class="hint">e.g. rhodium plating</div>
+      </div>
       <div class="field full">
         <label>Markup</label>
         <input type="text" id="markupDisplay" value="—" readonly style="background:#f7f3ec; font-weight:600; color:var(--accent-dark);">
@@ -671,13 +702,15 @@
       <div class="breakdown-row"><span class="breakdown-label">Metal Cost</span><span class="breakdown-value" id="outMetal">A$0.00</span></div>
       <div class="breakdown-row"><span class="breakdown-label">Stone Cost</span><span class="breakdown-value" id="outStone">A$0.00</span></div>
       <div class="breakdown-row"><span class="breakdown-label">Labour Cost</span><span class="breakdown-value" id="outLabour">A$0.00</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">CAD Cost</span><span class="breakdown-value" id="outCAD">A$0.00</span></div>
+      <div class="breakdown-row"><span class="breakdown-label">Additional Costs</span><span class="breakdown-value" id="outAdditional">A$0.00</span></div>
       <div class="breakdown-row"><span class="breakdown-label">Markup Applied</span><span class="breakdown-value" id="outMarkup">—</span></div>
       <div class="breakdown-row total"><span class="breakdown-label">Total Cost</span><span class="breakdown-value" id="outTotal">A$0.00</span></div>
       <div class="breakdown-row total"><span class="breakdown-label">Raw RRP (before ceiling)</span><span class="breakdown-value" id="outRRPraw">A$0.00</span></div>
     </div>
   </div>
 
-  <!-- Reasoning Card — separate card running vertically -->
+  <!-- Reasoning Card -->
   <div class="card reasoning-card no-print">
     <div class="section-title">Reasoning</div>
     <ol class="reasoning-list" id="reasoning">
@@ -721,7 +754,7 @@ const MARKUP_TABLE = [
   { bracket: 7500, factor: 3.50 }, { bracket: 8000, factor: 3.40 }
 ];
 const FLOOR_FACTOR = 3.40;
-const CEILING_STEP = 250; // Matches =CEILING(rrp, 250)
+const CEILING_STEP = 250;
 
 function lookupMarkup(totalCost) {
   if (totalCost <= 0) return { factor: 0, bracket: null };
@@ -731,24 +764,45 @@ function lookupMarkup(totalCost) {
   return { factor: FLOOR_FACTOR, bracket: null };
 }
 
+// Purity is encoded before the underscore: "0.750_18ky" -> 0.750
+function parsePurity(val) {
+  return parseFloat(val.split('_')[0]);
+}
+
+const ALLOY_LABELS = {
+  '0.375_9ky':  '9k Yellow Gold',
+  '0.585_14ky': '14k Yellow Gold',
+  '0.750_18ky': '18k Yellow Gold',
+  '0.375_9kw':  '9k White Gold',
+  '0.585_14kw': '14k White Gold',
+  '0.750_18kw': '18k White Gold',
+  '0.925_ss':   'Sterling Silver (925)'
+};
+function alloyLabel(val) { return ALLOY_LABELS[val] || val; }
+
+function handleAlloyChange() {
+  const val = document.getElementById('castingAlloy').value;
+  document.getElementById('wg-notice').classList.toggle('visible', val.endsWith('kw'));
+  calculate();
+}
+
 // ===== Date =====
-const formatDate = d => d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const formatDate      = d => d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const formatDateShort = d => d.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
 const now = new Date();
-document.getElementById('today-date').textContent = formatDate(now);
-document.getElementById('printDate').textContent = formatDateShort(now);
+document.getElementById('today-date').textContent    = formatDate(now);
+document.getElementById('printDate').textContent     = formatDateShort(now);
 document.getElementById('printFooterRef').textContent = 'Generated ' + formatDateShort(now);
 
-// ===== Gold price fetch — with cascading fallbacks & localStorage cache =====
-const goldInput = document.getElementById('gold-price');
-const goldMeta = document.getElementById('gold-meta');
-const goldChip = document.getElementById('gold-chip');
+// ===== Gold price fetch =====
+const goldInput  = document.getElementById('gold-price');
+const goldMeta   = document.getElementById('gold-meta');
+const goldChip   = document.getElementById('gold-chip');
 const refreshBtn = document.getElementById('refresh-gold');
 
 const CACHE_KEY = 'tots_gold_cache_v1';
 const FALLBACK_GOLD_PER_GRAM_AUD = 165.00;
 
-// Try to load last-known-good value from localStorage on init
 function loadCachedPrice() {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
@@ -756,21 +810,15 @@ function loadCachedPrice() {
   } catch (e) {}
   return null;
 }
-
 function saveCachedPrice(price, source) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      price, source, timestamp: new Date().toISOString()
-    }));
-  } catch (e) {}
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ price, source, timestamp: new Date().toISOString() })); } catch (e) {}
 }
 
-// Fetch AUD/USD FX rate — tries multiple sources until one works
 async function fetchAudPerUsd() {
   const fxSources = [
-    { name: 'frankfurter.dev', url: 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=AUD', parse: d => d.rates.AUD },
+    { name: 'frankfurter.dev',  url: 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=AUD', parse: d => d.rates.AUD },
     { name: 'exchangerate.host', url: 'https://api.exchangerate.host/latest?base=USD&symbols=AUD', parse: d => d.rates.AUD },
-    { name: 'open.er-api.com', url: 'https://open.er-api.com/v6/latest/USD', parse: d => d.rates.AUD }
+    { name: 'open.er-api.com',  url: 'https://open.er-api.com/v6/latest/USD',                      parse: d => d.rates.AUD }
   ];
   const errs = [];
   for (const s of fxSources) {
@@ -786,20 +834,17 @@ async function fetchAudPerUsd() {
   throw new Error('FX sources all failed (' + errs.join(' | ') + ')');
 }
 
-// Source 1: gold-api.com (USD/oz) + best-available FX
 async function tryGoldApi() {
   const goldRes = await fetch('https://api.gold-api.com/price/XAU', { cache: 'no-store' });
   if (!goldRes.ok) throw new Error('gold-api ' + goldRes.status);
   const goldData = await goldRes.json();
   const usdPerOz = goldData.price;
   if (!usdPerOz || usdPerOz < 100) throw new Error('Invalid gold price from gold-api');
-
   const fx = await fetchAudPerUsd();
   const audPerGram = (usdPerOz * fx.rate) / 31.1035;
   return { price: audPerGram, source: `gold-api.com + ${fx.source} (US$${usdPerOz.toFixed(2)}/oz × A$${fx.rate.toFixed(4)}/US$)` };
 }
 
-// Source 2: freegoldapi.com — backup gold source
 async function tryFreeGoldApi() {
   const res = await fetch('https://freegoldapi.com/data/latest.json', { cache: 'no-store' });
   if (!res.ok) throw new Error('freegoldapi ' + res.status);
@@ -808,7 +853,6 @@ async function tryFreeGoldApi() {
   const latest = data[data.length - 1];
   const usdPerOz = latest.price;
   if (!usdPerOz || usdPerOz < 100) throw new Error('Invalid price from freegoldapi');
-
   const fx = await fetchAudPerUsd();
   const audPerGram = (usdPerOz * fx.rate) / 31.1035;
   return { price: audPerGram, source: `freegoldapi.com + ${fx.source} (${latest.date}, US$${usdPerOz.toFixed(2)}/oz)` };
@@ -820,15 +864,13 @@ async function fetchGoldPrice() {
   goldMeta.textContent = 'Fetching live rate…';
 
   const sources = [
-    { fn: tryGoldApi,      name: 'gold-api.com' },
-    { fn: tryFreeGoldApi,  name: 'freegoldapi.com' }
+    { fn: tryGoldApi,     name: 'gold-api.com' },
+    { fn: tryFreeGoldApi, name: 'freegoldapi.com' }
   ];
-
   const errors = [];
   for (const source of sources) {
     try {
       const result = await source.fn();
-      // Success!
       goldInput.value = result.price.toFixed(2);
       saveCachedPrice(result.price, source.name);
       const timeStr = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
@@ -838,25 +880,19 @@ async function fetchGoldPrice() {
       refreshBtn.textContent = 'Refresh';
       calculate();
       return;
-    } catch (err) {
-      errors.push(`${source.name}: ${err.message}`);
-    }
+    } catch (err) { errors.push(`${source.name}: ${err.message}`); }
   }
 
-  // All sources failed — fall back to cache, then hardcoded default
   const cached = loadCachedPrice();
   if (cached) {
     goldInput.value = cached.price.toFixed(2);
-    const cacheDate = new Date(cached.timestamp);
-    const ageMs = Date.now() - cacheDate.getTime();
+    const ageMs  = Date.now() - new Date(cached.timestamp).getTime();
     const ageHrs = Math.round(ageMs / (1000 * 60 * 60));
     const ageStr = ageHrs < 24 ? `${ageHrs} hr` : `${Math.round(ageHrs/24)} day`;
     goldMeta.innerHTML = `<span style="color:var(--warn);">⚠ Live feed blocked — using cached rate from ${ageStr} ago (${cached.source}). Try Refresh again later.</span>`;
     goldChip.classList.add('stale');
   } else {
-    if (!goldInput.value || parseFloat(goldInput.value) <= 0) {
-      goldInput.value = FALLBACK_GOLD_PER_GRAM_AUD.toFixed(2);
-    }
+    if (!goldInput.value || parseFloat(goldInput.value) <= 0) goldInput.value = FALLBACK_GOLD_PER_GRAM_AUD.toFixed(2);
     goldMeta.innerHTML = `<span style="color:var(--warn);">⚠ Live feed unavailable.</span> Enter manually or try Refresh again. Full details: ${errors.join('; ')}`;
     goldChip.classList.add('stale');
   }
@@ -884,19 +920,19 @@ function updateProductFields() {
   document.getElementById('field-finding').classList.toggle('hidden', !cfg.finding);
   document.getElementById('field-chain').classList.toggle('hidden', !cfg.chain);
   if (!cfg.finding) document.getElementById('findingWeight').value = 0;
-  if (!cfg.chain) document.getElementById('chainWeight').value = 0;
+  if (!cfg.chain)   document.getElementById('chainWeight').value = 0;
 }
 
 // ===== Quote type toggle =====
-const qtInternal = document.getElementById('qtInternal');
-const qtCustomer = document.getElementById('qtCustomer');
+const qtInternal   = document.getElementById('qtInternal');
+const qtCustomer   = document.getElementById('qtCustomer');
 const customerField = document.getElementById('customerField');
-const customerName = document.getElementById('customerName');
+const customerName  = document.getElementById('customerName');
 
 function updateQuoteType() {
   const isCustomer = qtCustomer.checked;
   customerField.classList.toggle('visible', isCustomer);
-  const badge = document.getElementById('printQuoteTypeBadge');
+  const badge       = document.getElementById('printQuoteTypeBadge');
   const customerFor = document.getElementById('printCustomerFor');
   if (isCustomer) {
     badge.textContent = 'Customer Quote';
@@ -914,72 +950,58 @@ customerName.addEventListener('input', updateQuoteType);
 const escapeHtml = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 // ===== Calculation =====
-const money = n => 'A$' + n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money      = n => 'A$' + n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const moneyWhole = n => 'A$' + Math.round(n).toLocaleString('en-AU');
-
-function alloyLabel(purity) {
-  return {
-    '0.925': 'Sterling Silver (925)',
-    '0.375': '9k Gold',
-    '0.585': '14k Gold',
-    '0.750': '18k Gold'
-  }[purity] || 'Alloy';
-}
 
 function calculate() {
   const cfg = PRODUCT_FIELDS[currentProduct];
 
-  const castingWt = parseFloat(document.getElementById('castingWeight').value) || 0;
-  const findingWt = cfg.finding ? (parseFloat(document.getElementById('findingWeight').value) || 0) : 0;
-  const chainWt   = cfg.chain   ? (parseFloat(document.getElementById('chainWeight').value)   || 0) : 0;
+  const castingWt  = parseFloat(document.getElementById('castingWeight').value)  || 0;
+  const findingWt  = cfg.finding ? (parseFloat(document.getElementById('findingWeight').value) || 0) : 0;
+  const chainWt    = cfg.chain   ? (parseFloat(document.getElementById('chainWeight').value)   || 0) : 0;
   const totalWeight = castingWt + findingWt + chainWt;
 
-  const purityStr = document.getElementById('castingAlloy').value;
-  const purity = parseFloat(purityStr);
-  const stone = parseFloat(document.getElementById('stoneCost').value) || 0;
-  const labour = parseFloat(document.getElementById('labourCost').value) || 0;
-  const goldPrice = parseFloat(goldInput.value) || 0;
+  const alloyVal   = document.getElementById('castingAlloy').value;
+  const purity     = parsePurity(alloyVal);
+  const stone      = parseFloat(document.getElementById('stoneCost').value)      || 0;
+  const labour     = parseFloat(document.getElementById('labourCost').value)     || 0;
+  const cad        = parseFloat(document.getElementById('cadCost').value)        || 0;
+  const additional = parseFloat(document.getElementById('additionalCost').value) || 0;
+  const goldPrice  = parseFloat(goldInput.value) || 0;
 
-  // Metal cost = total weight × gold spot × purity
   const metalCost = totalWeight * goldPrice * purity;
-  const total = metalCost + stone + labour;
+  const total     = metalCost + stone + labour + cad + additional;
   const { factor, bracket } = lookupMarkup(total);
-  const rrpRaw = total * factor;
-  // Ceiling up to nearest $250 (matches =CEILING(rrp, 250) in pricing sheet)
+  const rrpRaw     = total * factor;
   const rrpCeiling = rrpRaw > 0 ? Math.ceil(rrpRaw / CEILING_STEP) * CEILING_STEP : 0;
 
-  // Markup display
   document.getElementById('markupDisplay').value = total > 0
     ? `${factor.toFixed(2)}×  (Total ≤ A$${bracket ? bracket.toLocaleString() : '8,000+'})`
     : '—';
 
-  // Breakdown
-  document.getElementById('outMetal').textContent = money(metalCost);
-  document.getElementById('outStone').textContent = money(stone);
-  document.getElementById('outLabour').textContent = money(labour);
-  document.getElementById('outMarkup').textContent = total > 0 ? `${factor.toFixed(2)}×` : '—';
-  document.getElementById('outTotal').textContent = money(total);
-  document.getElementById('outRRPraw').textContent = money(rrpRaw);
+  document.getElementById('outMetal').textContent      = money(metalCost);
+  document.getElementById('outStone').textContent      = money(stone);
+  document.getElementById('outLabour').textContent     = money(labour);
+  document.getElementById('outCAD').textContent        = money(cad);
+  document.getElementById('outAdditional').textContent = money(additional);
+  document.getElementById('outMarkup').textContent     = total > 0 ? `${factor.toFixed(2)}×` : '—';
+  document.getElementById('outTotal').textContent      = money(total);
+  document.getElementById('outRRPraw').textContent     = money(rrpRaw);
 
-  // Headline — the ceiling RRP
   document.getElementById('rrpValue').textContent = total > 0 ? moneyWhole(rrpCeiling) : 'A$0';
-  document.getElementById('rrpExact').textContent = total > 0
+  document.getElementById('rrpExact').textContent  = total > 0
     ? `raw: ${money(rrpRaw)} · ceiling up to nearest A$${CEILING_STEP}`
     : '—';
 
-  // Print header info
   const productName = document.getElementById('productName').value.trim();
   document.getElementById('printProductName').textContent = productName || '[Product Name]';
-  document.getElementById('printProductType').innerHTML = `<strong>${cfg.label}</strong> · ${alloyLabel(purityStr)} · ${totalWeight.toFixed(2)}g total metal`;
-  if (goldPrice > 0) {
-    document.getElementById('printGoldRef').textContent = `Gold ref: A$${goldPrice.toFixed(2)}/g (24k spot)`;
-  }
+  document.getElementById('printProductType').innerHTML   = `<strong>${cfg.label}</strong> · ${alloyLabel(alloyVal)} · ${totalWeight.toFixed(2)}g total metal`;
+  if (goldPrice > 0) document.getElementById('printGoldRef').textContent = `Gold ref: A$${goldPrice.toFixed(2)}/g (24k spot)`;
 
-  // Reasoning
-  updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, purity, purityStr, goldPrice, metalCost, stone, labour, total, factor, bracket, rrpRaw, rrpCeiling });
+  updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, purity, alloyVal, goldPrice, metalCost, stone, labour, cad, additional, total, factor, bracket, rrpRaw, rrpCeiling });
 }
 
-function updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, purity, purityStr, goldPrice, metalCost, stone, labour, total, factor, bracket, rrpRaw, rrpCeiling }) {
+function updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, purity, alloyVal, goldPrice, metalCost, stone, labour, cad, additional, total, factor, bracket, rrpRaw, rrpCeiling }) {
   const list = document.getElementById('reasoning');
   if (total <= 0) {
     list.innerHTML = '<li>Enter your weights and costs above to see the calculation logic.</li>';
@@ -994,9 +1016,15 @@ function updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, puri
     ? `Total cost of ${money(total)} falls in the <strong>≤ A$${bracket.toLocaleString()}</strong> band`
     : `Total cost of ${money(total)} is above the top band, so the floor factor applies`;
 
+  const costParts = [`${money(metalCost)} metal`];
+  if (stone      > 0) costParts.push(`${money(stone)} stones`);
+  if (labour     > 0) costParts.push(`${money(labour)} labour`);
+  if (cad        > 0) costParts.push(`${money(cad)} CAD`);
+  if (additional > 0) costParts.push(`${money(additional)} additional`);
+
   const steps = [
     {
-      text: `<strong>${cfg.label}</strong> in ${alloyLabel(purityStr)} — adding all metal weights.`,
+      text: `<strong>${cfg.label}</strong> in ${alloyLabel(alloyVal)} — adding all metal weights.`,
       calc: `${weightBreakdown} = <strong>${totalWeight.toFixed(2)}g total</strong>`
     },
     {
@@ -1005,7 +1033,7 @@ function updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, puri
     },
     {
       text: `<strong>Add all costs together</strong>.`,
-      calc: `${money(metalCost)} metal + ${money(stone)} stones + ${money(labour)} labour = <strong>${money(total)}</strong>`
+      calc: `${costParts.join(' + ')} = <strong>${money(total)}</strong>`
     },
     {
       text: `<strong>Markup applied from Markup Logic Table.</strong> ${bracketText}.`,
@@ -1021,19 +1049,14 @@ function updateReasoning({ cfg, castingWt, findingWt, chainWt, totalWeight, puri
 }
 
 // ===== Event wiring =====
-['productName', 'castingWeight', 'castingAlloy', 'findingWeight', 'chainWeight', 'stoneCost', 'labourCost']
+['productName', 'castingWeight', 'findingWeight', 'chainWeight', 'stoneCost', 'labourCost', 'cadCost', 'additionalCost']
   .forEach(id => document.getElementById(id).addEventListener('input', calculate));
 
 // ===== Init =====
 updateQuoteType();
 updateProductFields();
-// Pre-fill with cached value if available, otherwise fallback — so we never show $0
 const cachedInit = loadCachedPrice();
-if (cachedInit) {
-  goldInput.value = cachedInit.price.toFixed(2);
-} else {
-  goldInput.value = FALLBACK_GOLD_PER_GRAM_AUD.toFixed(2);
-}
+goldInput.value = cachedInit ? cachedInit.price.toFixed(2) : FALLBACK_GOLD_PER_GRAM_AUD.toFixed(2);
 calculate();
 fetchGoldPrice();
 </script>
